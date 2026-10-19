@@ -202,30 +202,60 @@ Topic backlog ──► (optional dashboard enrich) ──► batch OpenReels re
 
 ---
 
-## 8. Monorepo shape (all-inclusive AI marketing)
+## 8. Two-repo architecture (studio product + OpenReels engine)
 
-Target layout (logical packages; exact paths TBD at implement):
+**Decision:** Do **not** turn the public OpenReels repo into the commercial studio.  
+**Studio** = private product monorepo. **OpenReels** = OSS component, thinly adapted for men’s-health franchises.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│  mens-health-marketing-studio  (NEW private GitHub repo) │
+│  marketing · dashboard · outreach · Stripe · claim ops   │
+│  packages/franchises (business IP topic cards)           │
+└────────────────────────┬─────────────────────────────────┘
+                         │ depends on / calls
+┌────────────────────────▼─────────────────────────────────┐
+│  OpenReels  (existing OSS — https://github.com/.../OpenReels)
+│  pipeline · Remotion · providers                         │
+│  + engine PRs: --franchise, critic hooks, archetype      │
+└──────────────────────────────────────────────────────────┘
+```
+
+### 8.0 Studio monorepo layout
 
 ```
 apps/
   web/                 # Marketing site + production dashboard + clinic portal
   api/                 # Jobs, webhooks, Stripe, outreach triggers
-  worker/              # OpenReels pipeline worker (existing OpenReels core)
+  worker/              # Thin runner that invokes OpenReels (submodule, package, or HTTP)
 packages/
-  franchises/          # Direction packs, claim rules, topic cards
+  franchises/          # Direction packs, claim rules, topic cards (studio IP)
   outreach/            # Sequence templates, ICP lists, mail adapters
   billing/             # Stripe products, dunning hooks
   shared/              # Types, brand kit schema, localization vars
+specs/
+  mens-health-production-studio.md   # this document (source of truth)
+vendor/ or submodule/
+  openreels/           # optional pin of OpenReels
 ```
-
-**OpenReels** remains the **worker/factory** inside the monorepo (vendored, submodule, or workspace package) — not a separate business.
 
 **`apps/web` roles:**
 1. Public studio marketing site (PrimeX-inspired)  
 2. **Production dashboard** — create/enrich jobs, brand kits, asset inject, approve, re-render  
 3. Clinic portal — view/approve packs, invoices (when retainers need it)
 
-**Outreach** lives in-repo (sequences + CRM tables) or as a thin adapter to Gmail/Resend — inspired by sequencer patterns (e.g. seqd / n8n TriggerStack), implemented as first-party modules, not a bolted-on Instantly clone to resell.
+**OpenReels adaptations (stay upstream-friendly):**
+- Franchise / direction pack injection (`myth_bust`, `listicle_3`, `protocol`)  
+- Critic: on-screen hook, recap ending, claim-tier hooks  
+- Optional clinical archetype + stills-preferred defaults  
+- Stable CLI/API for the studio worker to call  
+
+**Studio-only (never merge into public OpenReels):**
+- Stripe, clinic CRM, outreach sequences, geo ICP lists  
+- Production dashboard auth, brand kits with customer data  
+- Commercial topic library / compliance SOPs  
+
+**Outreach** lives in the studio repo (sequences + CRM) — seqd/TriggerStack-class capability as first-party modules, not a product to resell.
 
 ### 8.1 Revenue cycle
 
@@ -325,9 +355,9 @@ Reuse existing: `--direction`, `--score` replay, critic loop, Remotion assembly,
 | Primary format set | myth_bust, listicle_3, protocol (+ optional what_to_expect) |
 | AI testimonials | Rejected as core format |
 | Revenue | Stripe pilot + subscription |
-| Repo shape | Monorepo: web + api + OpenReels worker + outreach + billing |
-| Customer-facing web | Marketing site + **production dashboard** + clinic portal |
+| Repo shape | **Two repos:** private studio monorepo + OpenReels OSS component |
+| Customer-facing web | Marketing site + **production dashboard** + clinic portal (studio) |
 | Content production | Automated by default; dashboard for enrich / custom specify |
-| Outreach | In-repo sequences (seqd/TriggerStack-class capability), not separate product |
+| Outreach | Studio in-repo sequences, not separate product |
 | Geo | TX/FL mid-metros first |
-| Factory | OpenReels, stills-first, franchise packs |
+| Factory | OpenReels (adapted), stills-first, franchise packs |
