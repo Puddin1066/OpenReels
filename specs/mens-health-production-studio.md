@@ -1,16 +1,32 @@
-# Men’s Health Production Studio — Spec
+# Men’s Health AI Marketing Studio — Spec
 
 **Status:** design draft (not implemented)  
-**Engine:** OpenReels pipeline (franchise direction packs + stills-first defaults)  
+**Shape:** **all-inclusive monorepo** for AI-driven marketing (content factory + GTM + billing + delivery)  
+**Factory engine:** OpenReels pipeline (franchise direction packs + stills-first defaults)  
 **Last updated:** 2026-10-19
 
 ---
 
 ## 1. One-line definition
 
-A **hyper-focused short-form production studio** that sells **claim-safe educational Shorts** as a **content / video line item** to cash-pay men’s clinics (TRT / ED / hormones) — powered by OpenReels, with a dual-use owned channel as R&D and sales engine.
+An **all-inclusive repo** that runs an AI-driven men’s health marketing studio: it **produces** claim-safe educational Shorts (OpenReels), **markets** the studio to clinics (site + outbound/nurture), **sells** pilots/retainers (Stripe), and **delivers** white-label packs — one system, one vertical (TRT / ED / hormones).
 
-**Not:** a full-service marketing agency, a Next.js SaaS starter product, a consumer health bot, or an AI-testimonial / fake-UGC ad farm.
+**Commercial offer:** productized Shorts retainer (content/video line item), PrimeX-inspired packaging, OpenReels-class automation.
+
+**Not:** a generic multi-vertical SaaS for any industry; a consumer medical advice bot; an AI-testimonial / fake-UGC farm; or “ads-only” creative with no education franchises.
+
+### 1.1 Clarified product thesis
+
+| Layer | Role in the all-inclusive repo |
+|-------|--------------------------------|
+| **Factory** | OpenReels — franchise Shorts generation |
+| **Marketing site** | Studio brand + samples + kit CTA (PrimeX-inspired) |
+| **Outreach / nurture** | Sequences to TX/FL clinics + post-lead email |
+| **Revenue** | Stripe pilot + subscription |
+| **Delivery / ops** | Onboard → approve → pack portal or Drive |
+| **Intelligence** | Topic library, hook winners, claim gate |
+
+This is **AI-driven marketing infrastructure for one studio business**, not a thin wrapper that only renders video.
 
 ---
 
@@ -171,31 +187,52 @@ Topic backlog → batch OpenReels render → human claim gate
 
 ---
 
-## 8. Revenue cycle (not Next SaaS-first)
+## 8. Monorepo shape (all-inclusive AI marketing)
 
-### 8.1 Preferred money path
+Target layout (logical packages; exact paths TBD at implement):
+
+```
+apps/
+  web/                 # Studio marketing site + later clinic portal (Next or Astro)
+  api/                 # Jobs, webhooks, Stripe, outreach triggers
+  worker/              # OpenReels pipeline worker (existing OpenReels core)
+packages/
+  franchises/          # Direction packs, claim rules, topic cards
+  outreach/            # Sequence templates, ICP lists, mail adapters
+  billing/             # Stripe products, dunning hooks
+  shared/              # Types, brand kit schema, localization vars
+```
+
+**OpenReels** remains the **worker/factory** inside the monorepo (vendored, submodule, or workspace package) — not a separate business.
+
+**Customer-facing web** lives in `apps/web`: public studio site first; authenticated delivery portal when retainers demand it.
+
+**Outreach** lives in-repo (sequences + CRM tables) or as a thin adapter to Gmail/Resend — inspired by sequencer patterns (e.g. seqd / n8n TriggerStack), implemented as first-party modules, not a bolted-on Instantly clone to resell.
+
+### 8.1 Revenue cycle
 
 ```
 Lead → Pilot (one-time Stripe) → Onboard → Retainer (Stripe subscription)
     → Deliver monthly → Expand locations/kits → Renew
 ```
 
-### 8.2 Lean stack
+| Stage | Enabled by monorepo |
+|-------|---------------------|
+| Attract | `apps/web` + studio Shorts channel + lead magnet |
+| Outreach | `packages/outreach` sequences to geo ICP |
+| Convert | Stripe Checkout / Subscription in `packages/billing` |
+| Fulfill | `worker` OpenReels batch + brand kit injection |
+| Gate | Claim review queue (human) before publish/deliver |
+| Retain | Monthly job scheduler + Customer Portal |
 
-- Stripe Checkout (pilot) + Subscriptions (retainer) + Customer Portal + dunning  
-- Airtable/Notion (CRM, topics, jobs, approvals)  
-- Typeform (brand kit) + Cal.com (sales)  
-- Customer.io / email sequence  
-- Google Drive delivery template  
-- OpenReels worker (Docker/API)  
+### 8.2 What “AI-driven” means here
 
-### 8.3 Next.js / SaaS starter
+- AI generates franchise Shorts, hooks, and topic drafts  
+- AI assists personalization of outreach copy (clinic name/city/angle)  
+- Humans own **claim approval** and sales close  
+- No AI fake patient testimonials; no unattended clinical advice bots  
 
-**Do not** start with a Next SaaS starter (orgs, seats, usage metering).
-
-Optional **later** (after ~5–10 retainers): thin client portal (login → packs → approve → invoices). That is a portal skin, not the business model.
-
-### 8.4 Pause rule
+### 8.3 Pause rule
 
 If invoice unpaid past grace → pause production jobs automatically.
 
@@ -232,8 +269,9 @@ Reuse existing: `--direction`, `--score` replay, critic loop, Remotion assembly,
 - Consumer chatbot that gives medical advice  
 - AI patient testimonials as a productized format  
 - Custom fine-tuned video ML runway before format-market fit  
-- Full multi-tenant SaaS billing/UI day one  
-- Replacing the clinic’s entire marketing agency  
+- Building a **generic** multi-tenant “marketing SaaS for any niche” before the men’s clinic studio works  
+- Replacing the clinic’s entire marketing agency (we supply Shorts + GTM for *our* studio; clinics may still have SEO/ads partners)  
+- Reselling cold-email infrastructure as the product (outreach is internal GTM)  
 
 ---
 
@@ -264,10 +302,13 @@ Reuse existing: `--direction`, `--score` replay, critic loop, Remotion assembly,
 
 | Decision | Choice |
 |----------|--------|
-| Product type | Production studio (productized retainer), not bot SaaS |
+| Product type | All-inclusive **AI marketing monorepo** operating a men’s health Shorts studio |
+| Commercial SKU | Productized retainer (PrimeX-inspired), not seat-based SaaS |
 | Primary format set | myth_bust, listicle_3, protocol (+ optional what_to_expect) |
 | AI testimonials | Rejected as core format |
 | Revenue | Stripe pilot + subscription |
-| App framework | No Next SaaS starter first |
+| Repo shape | Monorepo: web + api + OpenReels worker + outreach + billing |
+| Customer-facing web | Studio marketing site first; thin clinic portal later |
+| Outreach | In-repo sequences (seqd/TriggerStack-class capability), not separate product |
 | Geo | TX/FL mid-metros first |
 | Factory | OpenReels, stills-first, franchise packs |
