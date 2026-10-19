@@ -210,15 +210,15 @@ Topic backlog ──► (optional dashboard enrich) ──► batch OpenReels re
 ```
 ┌──────────────────────────────────────────────────────────┐
 │  mens-health-marketing-studio  (NEW private GitHub repo) │
-│  marketing · dashboard · outreach · Stripe · claim ops   │
+│  marketing · dashboard · Stripe · claim ops · GTM hooks  │
 │  packages/franchises (business IP topic cards)           │
-└────────────────────────┬─────────────────────────────────┘
-                         │ depends on / calls
-┌────────────────────────▼─────────────────────────────────┐
-│  OpenReels  (existing OSS — https://github.com/.../OpenReels)
-│  pipeline · Remotion · providers                         │
-│  + engine PRs: --franchise, critic hooks, archetype      │
-└──────────────────────────────────────────────────────────┘
+└───────┬───────────────────────────────┬──────────────────┘
+        │ depends on / calls            │ API / webhooks
+┌───────▼──────────────┐    ┌───────────▼──────────────────┐
+│  OpenReels (OSS)     │    │  External GTM (do not build) │
+│  Shorts factory      │    │  Clay (find/enrich/persona)  │
+│  + franchise PRs     │    │  Instantly (engage/send)     │
+└──────────────────────┘    └──────────────────────────────┘
 ```
 
 ### 8.0 Studio monorepo layout
@@ -226,11 +226,12 @@ Topic backlog ──► (optional dashboard enrich) ──► batch OpenReels re
 ```
 apps/
   web/                 # Marketing site + production dashboard + clinic portal
-  api/                 # Jobs, webhooks, Stripe, outreach triggers
+  api/                 # Jobs, Stripe, Clay/Instantly webhooks, CRM writeback
   worker/              # Thin runner that invokes OpenReels (submodule, package, or HTTP)
 packages/
   franchises/          # Direction packs, claim rules, topic cards (studio IP)
-  outreach/            # Sequence templates, ICP lists, mail adapters
+  gtm/                 # Thin adapters: ICP filters, copy vars, webhook handlers
+                       #   — NOT a sequencer. Clay + Instantly own find+engage
   billing/             # Stripe products, dunning hooks
   shared/              # Types, brand kit schema, localization vars
 specs/
@@ -251,11 +252,28 @@ vendor/ or submodule/
 - Stable CLI/API for the studio worker to call  
 
 **Studio-only (never merge into public OpenReels):**
-- Stripe, clinic CRM, outreach sequences, geo ICP lists  
-- Production dashboard auth, brand kits with customer data  
+- Stripe, clinic CRM, brand kits with customer data  
+- Production dashboard auth  
 - Commercial topic library / compliance SOPs  
+- GTM adapters + ICP definitions (geo, “has Instagram”, cash-pay TRT/ED)
 
-**Outreach** lives in the studio repo (sequences + CRM) — seqd/TriggerStack-class capability as first-party modules, not a product to resell.
+### 8.0.1 GTM stack — use existing tools (do not build a sequencer)
+
+**Decision:** Do **not** ship first-party cold-email / lead-scrape infrastructure (seqd, TriggerStack clones, custom Maps scrapers). That is commodity GTM; the studio’s edge is **content production**, not another Instantly.
+
+| Layer | Tool | Job |
+|-------|------|-----|
+| **Find + enrich + personalize** | **Clay** (primary) | Maps/local + Apollo waterfall, Claygent research (IG active? owner email?), AI personalization vars |
+| **Engage / send / warmup** | **Instantly** (primary; Smartlead OK) | Sequences, inbox rotation, reply inbox |
+| **Optional all-in-one local** | Openmart | If Clay data is thin on owner-ops clinics — local SMB find+send without building scrapers |
+| **Studio owns** | `packages/gtm` + `apps/api` | ICP filter defs, sequence *copy* templates, Instantly/Clay webhooks → CRM stage, “attach sample pack” trigger |
+
+**Why this stack (2026 cutting edge for this ICP):**
+- Men’s clinics are **local owner-ops**, not LinkedIn-heavy SaaS — Apollo alone is weak; Clay (waterfall + Claygent) or Openmart fixes find quality  
+- Instantly/Smartlead is where deliverability and engage loops live — rebuilding that is wasted runway  
+- Studio loop: Clay table (TX/FL TRT/ED + IG signal) → Instantly campaign → reply webhook → human close → Stripe → OpenReels fulfillment  
+
+**Explicit non-build:** no in-repo SMTP sequencer, no Maps scraper product, no “agency toolkit” to resell.
 
 ### 8.1 Revenue cycle
 
@@ -264,10 +282,10 @@ Lead → Pilot (one-time Stripe) → Onboard → Retainer (Stripe subscription)
     → Deliver monthly → Expand locations/kits → Renew
 ```
 
-| Stage | Enabled by monorepo |
-|-------|---------------------|
+| Stage | Enabled by |
+|-------|------------|
 | Attract | `apps/web` + studio Shorts channel + lead magnet |
-| Outreach | `packages/outreach` sequences to geo ICP |
+| Find + engage | **Clay + Instantly** (via `packages/gtm` hooks) |
 | Convert | Stripe Checkout / Subscription in `packages/billing` |
 | Fulfill | `worker` OpenReels batch + brand kit injection |
 | Gate | Claim review queue (human) before publish/deliver |
@@ -276,7 +294,7 @@ Lead → Pilot (one-time Stripe) → Onboard → Retainer (Stripe subscription)
 ### 8.2 What “AI-driven” means here
 
 - AI generates franchise Shorts, hooks, and topic drafts  
-- AI assists personalization of outreach copy (clinic name/city/angle)  
+- Clay/Claygent + Instantly AI assist personalization of outreach (clinic name/city/IG angle) — **outside** this repo’s core  
 - Humans own **claim approval** and sales close  
 - No AI fake patient testimonials; no unattended clinical advice bots  
 
@@ -319,7 +337,8 @@ Reuse existing: `--direction`, `--score` replay, critic loop, Remotion assembly,
 - Custom fine-tuned video ML runway before format-market fit  
 - Building a **generic** multi-tenant “marketing SaaS for any niche” before the men’s clinic studio works  
 - Replacing the clinic’s entire marketing agency (we supply Shorts + GTM for *our* studio; clinics may still have SEO/ads partners)  
-- Reselling cold-email infrastructure as the product (outreach is internal GTM)  
+- Reselling cold-email / lead-gen infrastructure as the product (Clay + Instantly are vendors; we are not Instantly)  
+- Building an in-repo sequencer or Maps scraper (commodity — buy Clay/Instantly/Openmart)  
 
 ---
 
@@ -329,7 +348,7 @@ Reuse existing: `--direction`, `--score` replay, critic loop, Remotion assembly,
 2. Ship 12 studio Shorts; instrument retention  
 3. Lead magnet: “12-Short Men’s Clinic Starter Kit” (watermarked)  
 4. Stripe pilot + retainer products live  
-5. Outbound / inbound in **one** TX or FL mid-metro cluster  
+5. Clay table + Instantly campaign live for **one** TX or FL mid-metro cluster  
 6. Close 2–3 pilots → convert ≥1 retainer  
 7. Feed winners into library; only then consider Phase 1 code  
 
@@ -358,6 +377,6 @@ Reuse existing: `--direction`, `--score` replay, critic loop, Remotion assembly,
 | Repo shape | **Two repos:** private studio monorepo + OpenReels OSS component |
 | Customer-facing web | Marketing site + **production dashboard** + clinic portal (studio) |
 | Content production | Automated by default; dashboard for enrich / custom specify |
-| Outreach | Studio in-repo sequences, not separate product |
+| Find + engage | **Clay + Instantly** (optional Openmart); studio only owns thin GTM adapters |
 | Geo | TX/FL mid-metros first |
 | Factory | OpenReels (adapted), stills-first, franchise packs |
