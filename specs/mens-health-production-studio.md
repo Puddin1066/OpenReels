@@ -124,14 +124,24 @@ Only these franchises. No AI-generated patient testimonials.
 - Hard drug/TRT outcome promises  
 - Unattended auto-posting of medical advice  
 
-### 5.2 Allowed social proof (separate, mostly manual)
+### 5.2 Content production model (automated + dashboard)
 
-- Real MD/NP face or voice (hybrid Class B)  
-- Permissioned real review quotes (text on screen)  
-- Process journey (“confused → booked → labs ordered”) without outcome claims  
-- Clinic tour / team  
+**Default: fully automated.** Franchise + topic card (+ clinic brand kit) → OpenReels batch → claim queue → deliver/publish.
 
-True patient testimonials = consented, clinic-owned, **outside** the automated factory SKU.
+**Enrichment / custom: dashboard-specified.** Operators (studio staff; later clinic users with limits) use a production dashboard to override and enrich before or after draft generation — without leaving the monorepo.
+
+| Dashboard control | What it does |
+|-------------------|--------------|
+| Pick franchise + topic | Or create ad-hoc brief from template |
+| Edit / generate hooks | Lock 1 of N; regenerate losers |
+| Brand kit | Logo, colors, voice, `{{clinic}}` / city / booking URL |
+| Script & beat overrides | Rewrite scene lines; pin beat roles |
+| Asset inject | Upload B-roll, MD VO, logo sting, permissioned review quote text |
+| Claim tier + footnotes | Force lifestyle vs evidence; require disclaimer |
+| Preview / approve / re-render | Human gate stays in-dashboard |
+| Schedule | Studio channel or clinic pack slot |
+
+**Social proof as enrichment (not a separate manual SKU):** real MD/NP VO, permissioned review quotes, process-journey beats, and clinic tour stills are **injected via the dashboard** into the automated pipeline. Synthetic AI patient testimonials remain forbidden.
 
 ### 5.3 Visual / production defaults
 
@@ -161,29 +171,34 @@ Public channel = demo reel + inbound. Same library instantiates client packs.
 
 ---
 
-## 7. Automated full cycle
+## 7. Automated full cycle (+ dashboard enrichment)
 
 ```
-Topic backlog → batch OpenReels render → human claim gate
-    → publish studio / deliver clinic pack
-    → nurture & onboard → monthly refresh
-    → performance → library
+Topic backlog ──► (optional dashboard enrich) ──► batch OpenReels render
+        │                                              │
+        │         dashboard: hooks, brand, assets,     ▼
+        │         script pins, claim tier          claim gate (in UI)
+        │                                              │
+        └──────────────────────────────────────────────┼──► publish / deliver
+                                                       │
+                              nurture & onboard ◄──────┘
+                              monthly refresh → performance → library
 ```
 
-| Stage | Automate | Human required |
-|-------|----------|----------------|
-| Library & hooks | Templates, backlog | Approve new medical-adjacent topics |
-| Produce | OpenReels batch jobs | — |
-| Gate | Rubric form | Claim / compliance pass |
-| Studio publish | Scheduler | Spot-check |
+| Stage | Automate | Dashboard / human |
+|-------|----------|-------------------|
+| Library & hooks | Templates, backlog, AI draft hooks | Enrich topics; approve medical-adjacent |
+| Produce | OpenReels batch (default path) | Specify custom brief, pins, injected assets |
+| Gate | Rubric checks surfaced in UI | Claim / compliance approve or reject |
+| Studio publish | Scheduler | Spot-check / reschedule |
 | Lead → nurture | Form + 5-touch email | Sales call for pilots |
-| Onboard | Typeform brand kit → job config | One kickoff call |
-| Deliver | Drive/portal + captions + calendar | Optional clinic MD approve |
+| Onboard | Brand kit → job config | Kickoff; kit edits in dashboard |
+| Deliver | Pack to portal | Optional clinic MD approve in dashboard |
 | Bill | Stripe pilot + subscription + dunning | Exceptions |
-| Learn | Topic × retention sheet | Promote / kill topics |
+| Learn | Topic × retention metrics | Promote / kill topics |
 
-**Automation ceiling:** factory, billing, nurture, intake, delivery.  
-**Never automate:** unreviewed clinical claims or fake testimonials.
+**Production is automated by default; customization is dashboard-driven.**  
+**Never auto-publish:** unreviewed clinical claims or synthetic patient testimonials.
 
 ---
 
@@ -193,7 +208,7 @@ Target layout (logical packages; exact paths TBD at implement):
 
 ```
 apps/
-  web/                 # Studio marketing site + later clinic portal (Next or Astro)
+  web/                 # Marketing site + production dashboard + clinic portal
   api/                 # Jobs, webhooks, Stripe, outreach triggers
   worker/              # OpenReels pipeline worker (existing OpenReels core)
 packages/
@@ -205,7 +220,10 @@ packages/
 
 **OpenReels** remains the **worker/factory** inside the monorepo (vendored, submodule, or workspace package) — not a separate business.
 
-**Customer-facing web** lives in `apps/web`: public studio site first; authenticated delivery portal when retainers demand it.
+**`apps/web` roles:**
+1. Public studio marketing site (PrimeX-inspired)  
+2. **Production dashboard** — create/enrich jobs, brand kits, asset inject, approve, re-render  
+3. Clinic portal — view/approve packs, invoices (when retainers need it)
 
 **Outreach** lives in-repo (sequences + CRM tables) or as a thin adapter to Gmail/Resend — inspired by sequencer patterns (e.g. seqd / n8n TriggerStack), implemented as first-party modules, not a bolted-on Instantly clone to resell.
 
@@ -308,7 +326,8 @@ Reuse existing: `--direction`, `--score` replay, critic loop, Remotion assembly,
 | AI testimonials | Rejected as core format |
 | Revenue | Stripe pilot + subscription |
 | Repo shape | Monorepo: web + api + OpenReels worker + outreach + billing |
-| Customer-facing web | Studio marketing site first; thin clinic portal later |
+| Customer-facing web | Marketing site + **production dashboard** + clinic portal |
+| Content production | Automated by default; dashboard for enrich / custom specify |
 | Outreach | In-repo sequences (seqd/TriggerStack-class capability), not separate product |
 | Geo | TX/FL mid-metros first |
 | Factory | OpenReels, stills-first, franchise packs |
