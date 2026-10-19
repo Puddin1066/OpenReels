@@ -210,15 +210,15 @@ Topic backlog ──► (optional dashboard enrich) ──► batch OpenReels re
 ```
 ┌──────────────────────────────────────────────────────────┐
 │  mens-health-marketing-studio  (NEW private GitHub repo) │
-│  marketing · dashboard · Stripe · claim ops · GTM hooks  │
+│  marketing · dashboard · Stripe · claim ops              │
 │  packages/franchises (business IP topic cards)           │
-└───────┬───────────────────────────────┬──────────────────┘
-        │ depends on / calls            │ API / webhooks
-┌───────▼──────────────┐    ┌───────────▼──────────────────┐
-│  OpenReels (OSS)     │    │  External GTM (do not build) │
-│  Shorts factory      │    │  Clay (find/enrich/persona)  │
-│  + franchise PRs     │    │  Instantly (engage/send)     │
-└──────────────────────┘    └──────────────────────────────┘
+└────────────────────────┬─────────────────────────────────┘
+                         │ depends on / calls
+┌────────────────────────▼─────────────────────────────────┐
+│  OpenReels (OSS) — Shorts factory + franchise PRs        │
+└──────────────────────────────────────────────────────────┘
+
+GTM (pilot stage): Google Sheet + Gmail `john@bioticabio.com` — no Clay, no Instantly.
 ```
 
 ### 8.0 Studio monorepo layout
@@ -226,12 +226,12 @@ Topic backlog ──► (optional dashboard enrich) ──► batch OpenReels re
 ```
 apps/
   web/                 # Marketing site + production dashboard + clinic portal
-  api/                 # Jobs, Stripe, Clay/Instantly webhooks, CRM writeback
+  api/                 # Jobs, Stripe webhooks, CRM writeback
   worker/              # Thin runner that invokes OpenReels (submodule, package, or HTTP)
 packages/
   franchises/          # Direction packs, claim rules, topic cards (studio IP)
-  gtm/                 # Thin adapters: ICP filters, copy vars, webhook handlers
-                       #   — NOT a sequencer. Clay + Instantly own find+engage
+  gtm/                 # Outreach kit only: ICP sheet columns, email templates, cadence
+                       #   — sends from Gmail john@bioticabio.com (manual / sheet-driven)
   billing/             # Stripe products, dunning hooks
   shared/              # Types, brand kit schema, localization vars
 specs/
@@ -255,25 +255,28 @@ vendor/ or submodule/
 - Stripe, clinic CRM, brand kits with customer data  
 - Production dashboard auth  
 - Commercial topic library / compliance SOPs  
-- GTM adapters + ICP definitions (geo, “has Instagram”, cash-pay TRT/ED)
+- GTM kit (sheet + templates) + ICP definitions  
 
-### 8.0.1 GTM stack — use existing tools (do not build a sequencer)
+### 8.0.1 GTM — Gmail first (no Clay / Instantly at pilot stage)
 
-**Decision:** Do **not** ship first-party cold-email / lead-scrape infrastructure (seqd, TriggerStack clones, custom Maps scrapers). That is commodity GTM; the studio’s edge is **content production**, not another Instantly.
+**Decision:** Pilot outbound runs from **Gmail `john@bioticabio.com`** plus a Google Sheet (or CSV). Do **not** buy Clay, Instantly, or build a sequencer until hand-sent volume is clearly the bottleneck.
 
 | Layer | Tool | Job |
 |-------|------|-----|
-| **Find + enrich + personalize** | **Clay** (primary) | Maps/local + Apollo waterfall, Claygent research (IG active? owner email?), AI personalization vars |
-| **Engage / send / warmup** | **Instantly** (primary; Smartlead OK) | Sequences, inbox rotation, reply inbox |
-| **Optional all-in-one local** | Openmart | If Clay data is thin on owner-ops clinics — local SMB find+send without building scrapers |
-| **Studio owns** | `packages/gtm` + `apps/api` | ICP filter defs, sequence *copy* templates, Instantly/Clay webhooks → CRM stage, “attach sample pack” trigger |
+| **Find** | Google Maps / clinic directories + manual IG check | TX/FL cash-pay TRT/ED clinics with an Instagram |
+| **Track** | Google Sheet (see `packages/gtm`) | One row per clinic; status, last touch, next follow-up |
+| **Engage** | **Gmail `john@bioticabio.com`** | Send ~20–40 personalized emails/day; 2–3 follow-ups |
+| **Close** | Human in inbox | Reply → call → Stripe pilot |
 
-**Why this stack (2026 cutting edge for this ICP):**
-- Men’s clinics are **local owner-ops**, not LinkedIn-heavy SaaS — Apollo alone is weak; Clay (waterfall + Claygent) or Openmart fixes find quality  
-- Instantly/Smartlead is where deliverability and engage loops live — rebuilding that is wasted runway  
-- Studio loop: Clay table (TX/FL TRT/ED + IG signal) → Instantly campaign → reply webhook → human close → Stripe → OpenReels fulfillment  
+**Cadence (pilot):**
+- ~20–40 new first-touch emails/day from `john@bioticabio.com`  
+- Follow-up day 3 and day 7 if no reply  
+- Stop sequence on any reply (including “not interested”)  
+- One metro cluster at a time (e.g. Austin or Tampa first)
 
-**Explicit non-build:** no in-repo SMTP sequencer, no Maps scraper product, no “agency toolkit” to resell.
+**When to reconsider Clay:** sheet + Gmail feels unbearable *and* list-building (finding verified emails) is the bottleneck — not before.
+
+**Explicit non-build:** no in-repo SMTP sequencer, no Maps scraper product, no Clay/Instantly dependency in the monorepo.
 
 ### 8.1 Revenue cycle
 
@@ -285,7 +288,7 @@ Lead → Pilot (one-time Stripe) → Onboard → Retainer (Stripe subscription)
 | Stage | Enabled by |
 |-------|------------|
 | Attract | `apps/web` + studio Shorts channel + lead magnet |
-| Find + engage | **Clay + Instantly** (via `packages/gtm` hooks) |
+| Find + engage | **Sheet + Gmail `john@bioticabio.com`** (`packages/gtm` kit) |
 | Convert | Stripe Checkout / Subscription in `packages/billing` |
 | Fulfill | `worker` OpenReels batch + brand kit injection |
 | Gate | Claim review queue (human) before publish/deliver |
@@ -294,8 +297,8 @@ Lead → Pilot (one-time Stripe) → Onboard → Retainer (Stripe subscription)
 ### 8.2 What “AI-driven” means here
 
 - AI generates franchise Shorts, hooks, and topic drafts  
-- Clay/Claygent + Instantly AI assist personalization of outreach (clinic name/city/IG angle) — **outside** this repo’s core  
-- Humans own **claim approval** and sales close  
+- Optional: paste clinic name/city into ChatGPT/Claude for a one-line personalization hook before sending from Gmail  
+- Humans own **claim approval**, Gmail send/reply, and sales close  
 - No AI fake patient testimonials; no unattended clinical advice bots  
 
 ### 8.3 Pause rule
@@ -337,8 +340,8 @@ Reuse existing: `--direction`, `--score` replay, critic loop, Remotion assembly,
 - Custom fine-tuned video ML runway before format-market fit  
 - Building a **generic** multi-tenant “marketing SaaS for any niche” before the men’s clinic studio works  
 - Replacing the clinic’s entire marketing agency (we supply Shorts + GTM for *our* studio; clinics may still have SEO/ads partners)  
-- Reselling cold-email / lead-gen infrastructure as the product (Clay + Instantly are vendors; we are not Instantly)  
-- Building an in-repo sequencer or Maps scraper (commodity — buy Clay/Instantly/Openmart)  
+- Reselling cold-email / lead-gen infrastructure as the product  
+- Building an in-repo sequencer or Maps scraper; buying Clay/Instantly before Gmail+sheet is the bottleneck  
 
 ---
 
@@ -348,7 +351,7 @@ Reuse existing: `--direction`, `--score` replay, critic loop, Remotion assembly,
 2. Ship 12 studio Shorts; instrument retention  
 3. Lead magnet: “12-Short Men’s Clinic Starter Kit” (watermarked)  
 4. Stripe pilot + retainer products live  
-5. Clay table + Instantly campaign live for **one** TX or FL mid-metro cluster  
+5. Sheet + Gmail (`john@bioticabio.com`) live for **one** TX or FL mid-metro cluster  
 6. Close 2–3 pilots → convert ≥1 retainer  
 7. Feed winners into library; only then consider Phase 1 code  
 
@@ -377,6 +380,6 @@ Reuse existing: `--direction`, `--score` replay, critic loop, Remotion assembly,
 | Repo shape | **Two repos:** private studio monorepo + OpenReels OSS component |
 | Customer-facing web | Marketing site + **production dashboard** + clinic portal (studio) |
 | Content production | Automated by default; dashboard for enrich / custom specify |
-| Find + engage | **Clay + Instantly** (optional Openmart); studio only owns thin GTM adapters |
+| Find + engage | **Gmail `john@bioticabio.com` + Sheet**; Clay only if hand-send becomes the bottleneck |
 | Geo | TX/FL mid-metros first |
 | Factory | OpenReels (adapted), stills-first, franchise packs |
